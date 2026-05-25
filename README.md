@@ -362,3 +362,11 @@ max buffer length
 [세모이 자판](https://blog.naver.com/eekdland/220526834927)과 같은 모두 모아치기의 구현을 원하신다면
 
 꺼삐딴 님의 [두두두 자판](https://blog.naver.com/atlkitol/222654253670)을 참고하시기 바랍니다.
+
+---
+
+## 참고 사항
+
+이 저장소는 공공성을 위하고 독점화를 막기 위해 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode.ko) 라이선스로 공개되어 있습니다.
+
+또한 원칙은 아니지만, 다른 곳에 소개하실 때 ssgi.kr 를 함께 표시해주시면 감사드리겠습니다.
