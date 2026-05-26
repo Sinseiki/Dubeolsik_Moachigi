@@ -16,6 +16,14 @@
 
 ---
 
+## 구현 예시
+
+<p style="text-align:center">
+  <img src="./images/dubeolsik-moachigi-sample.gif" width="640">
+</p>
+
+---
+
 ## 설계 목표
 
 두벌식 자판 모아치기는 다음 원칙을 기반으로 설계되었습니다.
@@ -324,7 +332,7 @@ max buffer length
 
 ### 이중모음 일부 조합과 겹받침을 IME에서 처리
 
-일부 이중모음 조합과 겹받침 조합은 IME 레벨에서 처리합니다.
+일부 이중모음과 겹받침의 일반 및 역순 조합은 IME 레벨에서 처리합니다.
 
 예
 
@@ -370,3 +378,19 @@ max buffer length
 이 저장소는 공공성을 위하고 독점화를 막기 위해 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode.ko) 라이선스로 공개되어 있습니다.
 
 또한 원칙은 아니지만, 다른 곳에 소개하실 때 ssgi.kr 를 함께 표시해주시면 감사드리겠습니다.
+
+---
+
+## 연관 자판 프로젝트
+
+이 저장소들은 한국어 키보드 배열 및 타자 인체공학에 관하여 진행 중인 연구 프로젝트의 일부입니다.
+
+| 이름 | 설명 |
+| --- | --- |
+| [세벌식 모아치기 e (세모이)](https://github.com/Sinseiki/Semo-e_keyboard) | 입력을 압축하는 준속기 자판 |
+| [두벌식 줄맞춤 e (두줄이)](https://github.com/Sinseiki/Dujul-e_keyboard) | 표준 두벌식 응용 효율 개선 자판 |
+| [두벌식 겹받침 e (두겹이)](https://github.com/Sinseiki/Dugyeob-e_keyboard) | 표준 두벌식 배열 기반 개선 자판 |
+| [**두벌식 자판 모아치기**](https://github.com/Sinseiki/Dubeolsik_Moachigi) | **두벌식 자판의 모아치기 연구** |
+| [타자 피로도 분석기](https://github.com/Sinseiki/typing-fatigue-analyzer) | 자판 연구를 위한 타자 피로도 분석 도구 |
+
+※ 타자 피로도 분석기는 [Hyunjun Ji](https://github.com/isty2e) 님의 분석기를 기반으로 연구 및 수정되었습니다.
