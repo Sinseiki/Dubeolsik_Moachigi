@@ -38,11 +38,26 @@ global g_sessionId := 0
 ; -------------------------
 ; 기능 토글 (F8)
 ; -------------------------
+global g_hookKeys := ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", ";"]
+
 F8::
     g_enabled := !g_enabled
+    SetMoachigiHooks(g_enabled)
+    ResetSession()
     ToolTip, % "Moachigi = " . (g_enabled ? "On" : "Off")
     SetTimer, __HideTip, -800
 return
+
+SetMoachigiHooks(isOn) {
+    global g_hookKeys
+
+    state := isOn ? "On" : "Off"
+
+    for idx, k in g_hookKeys {
+        hk := "$" . k
+        Hotkey, %hk%, %state%
+    }
+}
 
 __HideTip:
 ToolTip
