@@ -1,5 +1,5 @@
-; =========================================
-; 모아치기 (Chord) 입력 보조 도구 - AutoHotkey v1
+﻿; =========================================
+; 모아치기 (Chord) 입력 보조 도구 - AutoHotkey v2
 ; 모음 시작 자음+모음 조합에 대해서 입력 순서를 재배열하여 IME로 전달하는 스크립트입니다.
 ;
 ; 원리:
@@ -12,13 +12,9 @@
 ;   - 종성 처리는 이 스크립트가 아니라 IME가 담당합니다.
 ; =========================================
 
-#NoEnv
+#Requires AutoHotkey v2.0
 #SingleInstance Force
-#InstallKeybdHook
-#UseHook On
-SendMode Input
-SetBatchLines, -1
-ListLines, Off
+InstallKeybdHook()
 
 ; -------------------------
 ; 설정 (Settings)
@@ -40,40 +36,49 @@ global g_sessionId := 0
 ; -------------------------
 global g_hookKeys := ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
 
-F8::
+F8::ToggleMoachigi()
+
+ToggleMoachigi() {
+    global g_enabled
+
     g_enabled := !g_enabled
     SetMoachigiHooks(g_enabled)
     ResetSession()
-    ToolTip, % "Moachigi = " . (g_enabled ? "On" : "Off")
-    SetTimer, __HideTip, -800
-return
+    ToolTip("Moachigi = " . (g_enabled ? "On" : "Off"))
+    SetTimer(HideTip, -800)
+}
 
 SetMoachigiHooks(isOn) {
     global g_hookKeys
 
     state := isOn ? "On" : "Off"
 
-    for idx, k in g_hookKeys {
-        hk := "$" . k
-        Hotkey, %hk%, %state%
-    }
+    for k in g_hookKeys
+        Hotkey("$" . k, state)
 }
 
-__HideTip:
-ToolTip
-return
+HideTip() {
+    ToolTip()
+}
 
 ; =========================================
 ; 1) 키 분류 (표준 두벌식 기준)
 ; =========================================
 IsConsonantKey(k) {
-    static set := {"r":1,"s":1,"e":1,"f":1,"a":1,"q":1,"t":1,"d":1,"w":1,"c":1,"z":1,"x":1,"v":1,"g":1}
-    return set.HasKey(k)
+    static set := Map(
+        "r", 1, "s", 1, "e", 1, "f", 1, "a", 1,
+        "q", 1, "t", 1, "d", 1, "w", 1, "c", 1,
+        "z", 1, "x", 1, "v", 1, "g", 1
+    )
+    return set.Has(k)
 }
 
 IsVowelKey(k) {
-    static set := {"k":1,"o":1,"i":1,"j":1,"p":1,"u":1,"h":1,"y":1,"n":1,"b":1,"m":1,"l":1}
-    return set.HasKey(k)
+    static set := Map(
+        "k", 1, "o", 1, "i", 1, "j", 1, "p", 1, "u", 1,
+        "h", 1, "y", 1, "n", 1, "b", 1, "m", 1, "l", 1
+    )
+    return set.Has(k)
 }
 
 ; ============================================
@@ -82,85 +87,93 @@ IsVowelKey(k) {
 IsDiphPair(v1, v2) {
     pair := v1 . "+" . v2
 
-    static table
-    if !IsObject(table){
-        table := Object()
-        table["h+k"] := 1
-        table["k+h"] := 1
-        table["h+o"] := 1
-        table["o+h"] := 1
-        table["h+l"] := 1
-        table["l+h"] := 1
-        table["n+j"] := 1
-        table["j+n"] := 1
-        table["n+p"] := 1
-        table["p+n"] := 1
-        table["n+l"] := 1
-        table["l+n"] := 1
-        table["m+l"] := 1
-        table["l+m"] := 1
-    }
+    static table := Map(
+        "h+k", 1, "k+h", 1,
+        "h+o", 1, "o+h", 1,
+        "h+l", 1, "l+h", 1,
+        "n+j", 1, "j+n", 1,
+        "n+p", 1, "p+n", 1,
+        "n+l", 1, "l+n", 1,
+        "m+l", 1, "l+m", 1
+    )
 
-    return table.HasKey(pair)
+    return table.Has(pair)
 }
 
 NormalizeVowels(v1, v2) {
     pair := v1 . "+" . v2
 
-    static canon
-    if !IsObject(canon){
-        canon := Object()
-        canon["h+k"] := "h+k"
-        canon["k+h"] := "h+k"
-        canon["h+o"] := "h+o"
-        canon["o+h"] := "h+o"
-        canon["h+l"] := "h+l"
-        canon["l+h"] := "h+l"
-        canon["n+j"] := "n+j"
-        canon["j+n"] := "n+j"
-        canon["n+p"] := "n+p"
-        canon["p+n"] := "n+p"
-        canon["n+l"] := "n+l"
-        canon["l+n"] := "n+l"
-        canon["m+l"] := "m+l"
-        canon["l+m"] := "m+l"
-    }
+    static canon := Map(
+        "h+k", "h+k", "k+h", "h+k",
+        "h+o", "h+o", "o+h", "h+o",
+        "h+l", "h+l", "l+h", "h+l",
+        "n+j", "n+j", "j+n", "n+j",
+        "n+p", "n+p", "p+n", "n+p",
+        "n+l", "n+l", "l+n", "n+l",
+        "m+l", "m+l", "l+m", "m+l"
+    )
 
-    if !canon.HasKey(pair)
+    if !canon.Has(pair)
         return [v1, v2]
 
-    parts := StrSplit(canon[pair], "+")
-    return parts
+    return StrSplit(canon[pair], "+")
 }
 
 ; =========================================
 ; 3) 보조 함수 (Helpers)
 ; =========================================
-CountCV(ByRef arr, ByRef c, ByRef v, ByRef o) {
-    c := 0, v := 0, o := 0
-    for idx, k in arr {
-        if (IsConsonantKey(k))
-            c++
-        else if (IsVowelKey(k))
-            v++
+CountCV(arr) {
+    c := 0
+    v := 0
+    o := 0
+
+    for k in arr {
+        if IsConsonantKey(k)
+            c += 1
+        else if IsVowelKey(k)
+            v += 1
         else
-            o++
+            o += 1
     }
+
+    return {c: c, v: v, o: o}
 }
 
-ClonePush(ByRef src, k) {
+ClonePush(src, k) {
     out := []
-    for i, x in src
+    for x in src
         out.Push(x)
     out.Push(k)
     return out
+}
+
+JoinKeys(arr) {
+    output := ""
+
+    for k in arr
+        output .= k
+
+    return output
+}
+
+; SendEvent를 사용하되, {Text}가 아니라 실제 키 이벤트를 보냅니다.
+; 이 스크립트의 출력은 최종 영문 텍스트가 아니라
+; 날개셋 입력기가 해석할 QWERTY 키열이기 때문입니다.
+EmitKeySequence(sequence) {
+    if (sequence = "")
+        return
+
+    oldLevel := A_SendLevel
+    SendLevel 0
+    SendEvent(sequence)
+    SendLevel oldLevel
 }
 
 ResetSession() {
     global g_timerOn, g_keys
     g_timerOn := false
     g_keys := []
-    SetTimer, __ChordTimeout, Off
+    SetTimer(ChordTimeout, 0)
 }
 
 StartSessionWith(k) {
@@ -169,24 +182,26 @@ StartSessionWith(k) {
     g_timerOn := true
     g_sessionId += 1
     g_keys.Push(k)
-    SetTimer, __ChordTimeout, Off
-    SetTimer, __ChordTimeout, -%CHORD_MS%
+    SetTimer(ChordTimeout, -CHORD_MS)
 }
 
 ; =========================================
 ; 4) 후보 조합 규칙 (Candidate policy)
 ;    세션은 반드시 모음으로 시작해야 합니다.
 ; =========================================
-IsAllowedPrefix(ByRef arr) {
-    c:=0, v:=0, o:=0
-    CountCV(arr, c, v, o)
+IsAllowedPrefix(arr) {
+    counts := CountCV(arr)
+    c := counts.c
+    v := counts.v
+    o := counts.o
+
     if (o > 0)
         return false
 
-    len := arr.Length()
+    len := arr.Length
 
     ; 모든 세션은 모음으로 시작해야 합니다.
-    if (!IsVowelKey(arr[1]))
+    if !IsVowelKey(arr[1])
         return false
 
     ; V
@@ -195,46 +210,51 @@ IsAllowedPrefix(ByRef arr) {
 
     ; VC, VV(이중모음, diphthong)
     if (len = 2) {
-        if (c=1 && v=1)
+        if (c = 1 && v = 1)
             return true
-        if (c=0 && v=2)
+        if (c = 0 && v = 2)
             return IsDiphPair(arr[1], arr[2])
         return false
     }
 
     ; VCV / VVC / CVV를 다중 집합으로 (모음 시작 세션 중에)
-    if (len = 3 && c=1 && v=2) {
+    if (len = 3 && c = 1 && v = 2) {
         vv := []
-        for i,k in arr
-            if (IsVowelKey(k))
+        for k in arr {
+            if IsVowelKey(k)
                 vv.Push(k)
+        }
         return IsDiphPair(vv[1], vv[2])
     }
 
     return false
 }
 
-IsAllowedFinal(ByRef arr) {
-    c:=0, v:=0, o:=0
-    CountCV(arr, c, v, o)
+IsAllowedFinal(arr) {
+    counts := CountCV(arr)
+    c := counts.c
+    v := counts.v
+    o := counts.o
+
     if (o > 0)
         return false
 
-    len := arr.Length()
+    len := arr.Length
 
-    if (!IsVowelKey(arr[1]))
+    if !IsVowelKey(arr[1])
         return false
 
     ; VC -> CV
-    if (len = 2 && c=1 && v=1)
+    if (len = 2 && c = 1 && v = 1)
         return true
 
     ; VCV / VVC / CVV -> CVV
-    if (len = 3 && c=1 && v=2) {
+    if (len = 3 && c = 1 && v = 2) {
         vv := []
-        for i,k in arr
-            if (IsVowelKey(k))
+        for k in arr {
+            if IsVowelKey(k)
                 vv.Push(k)
+        }
         return IsDiphPair(vv[1], vv[2])
     }
 
@@ -244,42 +264,37 @@ IsAllowedFinal(ByRef arr) {
 ; =========================================
 ; 5) 출력 처리 보조 함수 (Emit helpers)
 ; =========================================
-EmitRaw(ByRef arr) {
-    for idx, k in arr
-        SendInput, %k%
+EmitRaw(arr) {
+    EmitKeySequence(JoinKeys(arr))
 }
 
-EmitReordered(ByRef arr) {
+EmitReordered(arr) {
     cons := []
     vows := []
     others := []
 
-    for idx, k in arr {
-        if (IsConsonantKey(k))
+    for k in arr {
+        if IsConsonantKey(k)
             cons.Push(k)
-        else if (IsVowelKey(k))
+        else if IsVowelKey(k)
             vows.Push(k)
         else
             others.Push(k)
     }
 
-    if (others.Length() > 0) {
+    if (others.Length > 0)
         return false
-    }
 
     ; VC -> CV
-    if (arr.Length() = 2 && cons.Length() = 1 && vows.Length() = 1) {
-        SendInput, % cons[1]
-        SendInput, % vows[1]
+    if (arr.Length = 2 && cons.Length = 1 && vows.Length = 1) {
+        EmitKeySequence(cons[1] . vows[1])
         return true
     }
 
     ; VCV / VVC / CVV -> C + 정규화된 VV
-    if (arr.Length() = 3 && cons.Length() = 1 && vows.Length() = 2 && IsDiphPair(vows[1], vows[2])) {
+    if (arr.Length = 3 && cons.Length = 1 && vows.Length = 2 && IsDiphPair(vows[1], vows[2])) {
         norm := NormalizeVowels(vows[1], vows[2])
-        SendInput, % cons[1]
-        SendInput, % norm[1]
-        SendInput, % norm[2]
+        EmitKeySequence(cons[1] . norm[1] . norm[2])
         return true
     }
 
@@ -289,23 +304,18 @@ EmitReordered(ByRef arr) {
 EmitCurrent() {
     global g_keys
 
-    if (g_keys.Length() = 0)
+    if (g_keys.Length = 0)
         return
 
     keys := []
-    for i, k in g_keys
+    for k in g_keys
         keys.Push(k)
 
     g_keys := []
+    SetTimer(ChordTimeout, 0)
 
-    SetTimer, __ChordTimeout, Off
-
-    reordered := EmitReordered(keys)
-
-    if (!reordered) {
-        for idx, k in keys
-            SendInput, %k%
-    }
+    if !EmitReordered(keys)
+        EmitRaw(keys)
 }
 
 ; =========================================
@@ -314,22 +324,23 @@ EmitCurrent() {
 OnKey(k) {
     global g_enabled, g_timerOn, g_keys, CHORD_MS, MAX_KEYS, g_sessionId
 
-    ; 비활성 상태 -> 입력 그대로 전달
-    if (!g_enabled) {
-        SendInput, %k%
+    ; 비활성 상태에서는 Hotkey 자체가 꺼지므로 일반적으로 이 경로에 들어오지 않습니다.
+    ; 토글 경계 등에서 호출되었을 경우를 위한 안전 경로입니다.
+    if !g_enabled {
+        EmitKeySequence(k)
         return
     }
 
-    ; Shift/Ctrl/Alt 중 하나라도 눌린 상태라면, 로직을 우회하여 입력 그대로 전달
-    if (GetKeyState("Shift","P") || GetKeyState("Ctrl","P") || GetKeyState("Alt","P")) {
-        SendInput, %k%
+    ; Shift/Ctrl/Alt 중 하나라도 눌린 상태라면 로직을 우회하여 입력 그대로 전달
+    if (GetKeyState("Shift", "P") || GetKeyState("Ctrl", "P") || GetKeyState("Alt", "P")) {
+        EmitKeySequence(k)
         return
     }
 
-    ; 활성 세션이 없는 경우: 모음으로만 코드 세션을 시작할 수 있습니다.
-    if (!g_timerOn) {
-        if (IsConsonantKey(k)) {
-            SendInput, %k%
+    ; 활성 세션이 없는 경우: 모음으로만 chord 세션을 시작할 수 있습니다.
+    if !g_timerOn {
+        if IsConsonantKey(k) {
+            EmitKeySequence(k)
             return
         }
         StartSessionWith(k)
@@ -338,17 +349,17 @@ OnKey(k) {
 
     ; 활성 세션용 롤링 타이머
     g_sessionId += 1
-    SetTimer, __ChordTimeout, Off
-    SetTimer, __ChordTimeout, -%CHORD_MS%
+    SetTimer(ChordTimeout, 0)
+    SetTimer(ChordTimeout, -CHORD_MS)
 
-    ; 동일한 키가 한 세션 내에서 반복될 경우 -> 현재 키를 플러시한 후, 새로 처리
-    for idx, kk in g_keys {
+    ; 동일한 키가 한 세션 내에서 반복될 경우 -> 현재 키를 플러시한 후 새로 처리
+    for kk in g_keys {
         if (kk = k) {
             EmitCurrent()
             ResetSession()
 
-            if (IsConsonantKey(k)) {
-                SendInput, %k%
+            if IsConsonantKey(k) {
+                EmitKeySequence(k)
                 return
             }
             StartSessionWith(k)
@@ -359,32 +370,31 @@ OnKey(k) {
     candidate := ClonePush(g_keys, k)
 
     ; Hard guard: 세션 버퍼는 MAX_KEYS를 초과할 수 없습니다.
-    ; (보통은 후보 조합 규칙에서 걸러지지만, 혹시 모를 예외 상황 대비)
-    if (g_keys.Length() > MAX_KEYS) {
+    if (g_keys.Length > MAX_KEYS) {
         ResetSession()
     }
 
-    ; 너무 길어지는 경우 -> 현재 세션 플러시 후, 현재 키를 새로 처리
-    if (candidate.Length() > MAX_KEYS) {
+    ; 너무 길어지는 경우 -> 현재 세션 플러시 후 현재 키를 새로 처리
+    if (candidate.Length > MAX_KEYS) {
         EmitCurrent()
         ResetSession()
 
-        if (IsConsonantKey(k)) {
-            SendInput, %k%
+        if IsConsonantKey(k) {
+            EmitKeySequence(k)
             return
         }
         StartSessionWith(k)
         return
     }
 
-    ; 만일 후보 조합이 허용된 접두어/최종 형태가 아니라면, 현재 세션을 종료하고 새로 시작
-    if (candidate.Length() >= 2) {
+    ; 후보 조합이 허용된 접두어/최종 형태가 아니라면 현재 세션을 종료하고 새로 시작
+    if (candidate.Length >= 2) {
         if (!IsAllowedPrefix(candidate) && !IsAllowedFinal(candidate)) {
             EmitCurrent()
             ResetSession()
 
-            if (IsConsonantKey(k)) {
-                SendInput, %k%
+            if IsConsonantKey(k) {
+                EmitKeySequence(k)
                 return
             }
             StartSessionWith(k)
@@ -396,26 +406,25 @@ OnKey(k) {
     g_keys.Push(k)
 
     ; 3-key final이 준비되면 즉시 출력
-    if (g_keys.Length() = 3 && IsAllowedFinal(g_keys)) {
-        SetTimer, __ChordTimeout, Off
+    if (g_keys.Length = 3 && IsAllowedFinal(g_keys)) {
+        SetTimer(ChordTimeout, 0)
         EmitCurrent()
         ResetSession()
-        return
     }
 }
 
-__ChordTimeout:
+ChordTimeout() {
     global g_timerOn, g_sessionId, g_lastHandledSessionId
 
     if (g_sessionId = g_lastHandledSessionId)
         return
 
-    if (g_timerOn) {
+    if g_timerOn {
         g_lastHandledSessionId := g_sessionId
         EmitCurrent()
         ResetSession()
     }
-return
+}
 
 ; =========================================
 ; 7) 키 훅 (Hooks)
